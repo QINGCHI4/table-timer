@@ -137,12 +137,13 @@ h1 {
 
 .tables {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
 .table-card {
   border-radius: 8px;
-  padding: 14px;
+  padding: 10px;
 }
 
 .table-head,
@@ -186,14 +187,14 @@ h1 {
 
 .table-number {
   margin-top: 12px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .timer {
   margin: 8px 0 6px;
   font-variant-numeric: tabular-nums;
-  font-size: clamp(42px, 16vw, 68px);
+  font-size: clamp(28px, 10vw, 42px);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -207,7 +208,7 @@ h1 {
 .controls {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
   margin-top: 12px;
 }
 
@@ -363,10 +364,6 @@ input {
 }
 
 @media (min-width: 460px) {
-  .tables {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .timer {
     font-size: 42px;
   }
