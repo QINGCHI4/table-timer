@@ -1,9 +1,19 @@
 const STORAGE_KEY = "table-timer-v1";
+const AUTH_KEY = "table-timer-auth";
+const LOGIN_NAME = "Q";
+const PASSWORD_HASH = "1362b0f03cb357d5c699240f0adf8a06bd21dd95e241f909a15dfb6c0734d218";
 
 const state = loadState();
 let extendTableId = null;
 
 const els = {
+  appShell: document.querySelector("#appShell"),
+  loginScreen: document.querySelector("#loginScreen"),
+  loginForm: document.querySelector("#loginForm"),
+  loginName: document.querySelector("#loginName"),
+  loginPassword: document.querySelector("#loginPassword"),
+  loginError: document.querySelector("#loginError"),
+  logoutBtn: document.querySelector("#logoutBtn"),
   todayLabel: document.querySelector("#todayLabel"),
   activeCount: document.querySelector("#activeCount"),
   recordCount: document.querySelector("#recordCount"),
@@ -18,6 +28,45 @@ const els = {
   tablePickerDialog: document.querySelector("#tablePickerDialog"),
   tablePicker: document.querySelector("#tablePicker"),
 };
+
+async function sha256(value) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function setAuthenticated(isAuthenticated) {
+  if (isAuthenticated) {
+    localStorage.setItem(AUTH_KEY, "1");
+    els.loginScreen.classList.add("is-hidden");
+    els.appShell.classList.remove("is-locked");
+    render();
+    return;
+  }
+
+  localStorage.removeItem(AUTH_KEY);
+  els.appShell.classList.add("is-locked");
+  els.loginScreen.classList.remove("is-hidden");
+  els.loginName.focus();
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const name = els.loginName.value.trim();
+  const password = els.loginPassword.value;
+  const passwordHash = await sha256(password);
+
+  if (name === LOGIN_NAME && passwordHash === PASSWORD_HASH) {
+    els.loginError.textContent = "";
+    els.loginPassword.value = "";
+    setAuthenticated(true);
+    return;
+  }
+
+  els.loginError.textContent = "名称或密码不对";
+  els.loginPassword.value = "";
+  els.loginPassword.focus();
+}
 
 function loadState() {
   const fallback = {
@@ -258,6 +307,8 @@ els.addTableBtn.addEventListener("click", () => {
   renderTablePicker();
   els.tablePickerDialog.showModal();
 });
+els.loginForm.addEventListener("submit", handleLogin);
+els.logoutBtn.addEventListener("click", () => setAuthenticated(false));
 els.clearRecordsBtn.addEventListener("click", clearTodayRecords);
 
 els.recordList.addEventListener("click", (event) => {
@@ -308,8 +359,9 @@ els.tablePickerDialog.addEventListener("close", () => {
 });
 
 setInterval(() => {
+  if (localStorage.getItem(AUTH_KEY) !== "1") return;
   renderSummary();
   renderTables();
 }, 1000);
 
-render();
+setAuthenticated(localStorage.getItem(AUTH_KEY) === "1");

@@ -12,13 +12,32 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="app-shell">
+  <section class="login-screen" id="loginScreen">
+    <form class="login-card" id="loginForm">
+      <h1>桌子计时</h1>
+      <label>
+        名称
+        <input id="loginName" type="text" autocomplete="username" inputmode="text">
+      </label>
+      <label>
+        密码
+        <input id="loginPassword" type="password" autocomplete="current-password" inputmode="numeric">
+      </label>
+      <p class="login-error" id="loginError" aria-live="polite"></p>
+      <button class="primary" type="submit">进入</button>
+    </form>
+  </section>
+
+  <main class="app-shell is-locked" id="appShell">
     <header class="topbar">
       <div>
         <p class="date-label" id="todayLabel"></p>
         <h1>桌子计时</h1>
       </div>
-      <button class="icon-button" id="addTableBtn" type="button" aria-label="添加桌子">+</button>
+      <div class="top-actions">
+        <button class="logout-button" id="logoutBtn" type="button">退出</button>
+        <button class="icon-button" id="addTableBtn" type="button" aria-label="添加桌子">+</button>
+      </div>
     </header>
 
     <section class="summary" aria-label="今日概览">
