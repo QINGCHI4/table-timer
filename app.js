@@ -4,6 +4,7 @@ const LOGIN_NAME = "Q";
 const PASSWORD_HASH = "1362b0f03cb357d5c699240f0adf8a06bd21dd95e241f909a15dfb6c0734d218";
 const DEFAULT_DURATION_MS = 60 * 60 * 1000;
 const EXTENSION_MS = 60 * 60 * 1000;
+const WARNING_MS = 10 * 60 * 1000;
 
 const state = loadState();
 let selectedRecordDate = todayKey();
@@ -249,12 +250,14 @@ function renderTables() {
   const now = Date.now();
   sortedTables.forEach((table) => {
     const node = els.tableTemplate.content.firstElementChild.cloneNode(true);
+    const remainingMs = remainingFor(table, now);
     node.classList.toggle("running", table.status === "running");
     node.classList.toggle("paused", table.status === "paused");
+    node.classList.toggle("warning", table.status === "running" && remainingMs <= WARNING_MS);
     node.dataset.id = table.id;
     node.querySelector(".status-text").textContent = table.status === "running" ? "计时中" : "未开始";
     node.querySelector(".table-number").textContent = `${table.number} 号桌`;
-    node.querySelector(".timer").textContent = formatClock(remainingFor(table, now));
+    node.querySelector(".timer").textContent = formatClock(remainingMs);
     node.querySelector(".meta").textContent = tableMeta(table);
     node.querySelector('[data-action="start"]').textContent = table.status === "running" ? "计时中" : "开始计时";
     node.querySelector('[data-action="start"]').disabled = table.status === "running";

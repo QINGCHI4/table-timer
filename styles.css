@@ -196,6 +196,11 @@ h1 {
   padding: 10px;
 }
 
+.table-card.warning {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18), var(--shadow);
+}
+
 .table-head,
 .section-title,
 .dialog-actions {
