@@ -1,4 +1,4 @@
-const CACHE_NAME = "table-timer-cache-v2";
+const CACHE_NAME = "table-timer-cache-v4";
 const ASSETS = [
   "./",
   "./index.html",

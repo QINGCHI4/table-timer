@@ -5,6 +5,7 @@ const PASSWORD_HASH = "1362b0f03cb357d5c699240f0adf8a06bd21dd95e241f909a15dfb6c0
 
 const state = loadState();
 let extendTableId = null;
+let selectedRecordDate = todayKey();
 
 const els = {
   appShell: document.querySelector("#appShell"),
@@ -19,6 +20,9 @@ const els = {
   recordCount: document.querySelector("#recordCount"),
   tablesList: document.querySelector("#tablesList"),
   recordList: document.querySelector("#recordList"),
+  recordDateInput: document.querySelector("#recordDateInput"),
+  prevDateBtn: document.querySelector("#prevDateBtn"),
+  nextDateBtn: document.querySelector("#nextDateBtn"),
   addTableBtn: document.querySelector("#addTableBtn"),
   clearRecordsBtn: document.querySelector("#clearRecordsBtn"),
   tableTemplate: document.querySelector("#tableTemplate"),
@@ -101,6 +105,12 @@ function todayKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function shiftDate(dateKey, days) {
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return todayKey(date);
+}
+
 function formatClock(ms) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);
@@ -135,6 +145,7 @@ function addTable(number) {
     startedAt: null,
     elapsedMs: 0,
     extendedMinutes: 0,
+    isRepeatCustomer: false,
     createdAt: Date.now(),
   });
   state.nextTableNumber = Math.max(state.nextTableNumber, number + 1);
@@ -158,6 +169,12 @@ function extendTable(table, minutes) {
   render();
 }
 
+function toggleRepeatCustomer(table) {
+  table.isRepeatCustomer = !table.isRepeatCustomer;
+  saveState();
+  render();
+}
+
 function finishTable(table) {
   const finishedAt = Date.now();
   const totalMs = elapsedFor(table, finishedAt);
@@ -168,6 +185,7 @@ function finishTable(table) {
     finishedAt,
     elapsedMs: totalMs,
     extendedMinutes: table.extendedMinutes || 0,
+    isRepeatCustomer: Boolean(table.isRepeatCustomer),
     date: todayKey(new Date(finishedAt)),
   });
   state.tables = state.tables.filter((item) => item.id !== table.id);
@@ -183,12 +201,11 @@ function removeTable(table) {
   render();
 }
 
-function clearTodayRecords() {
-  const today = todayKey();
-  const todayRecords = state.records.filter((record) => record.date === today);
-  if (todayRecords.length === 0) return;
-  if (!confirm("清空当天记录？")) return;
-  state.records = state.records.filter((record) => record.date !== today);
+function clearSelectedDateRecords() {
+  const selectedRecords = state.records.filter((record) => record.date === selectedRecordDate);
+  if (selectedRecords.length === 0) return;
+  if (!confirm("清空这个日期的记录？")) return;
+  state.records = state.records.filter((record) => record.date !== selectedRecordDate);
   saveState();
   render();
 }
@@ -231,19 +248,22 @@ function renderTables() {
     node.querySelector(".meta").textContent = tableMeta(table);
     node.querySelector('[data-action="start"]').textContent = table.status === "running" ? "计时中" : "开始计时";
     node.querySelector('[data-action="start"]').disabled = table.status === "running";
+    const repeatButton = node.querySelector('[data-action="repeat"]');
+    repeatButton.classList.toggle("is-repeat", Boolean(table.isRepeatCustomer));
+    repeatButton.textContent = table.isRepeatCustomer ? "已复来" : "复来";
     els.tablesList.append(node);
   });
 }
 
 function renderRecords() {
-  const today = todayKey();
-  const records = state.records.filter((record) => record.date === today);
+  els.recordDateInput.value = selectedRecordDate;
+  const records = state.records.filter((record) => record.date === selectedRecordDate);
   els.recordList.innerHTML = "";
 
   if (records.length === 0) {
     const empty = document.createElement("div");
     empty.className = "empty";
-    empty.textContent = "当天还没有结束记录";
+    empty.textContent = "这个日期还没有结束记录";
     els.recordList.append(empty);
     return;
   }
@@ -253,11 +273,12 @@ function renderRecords() {
     item.className = "record-item";
     item.dataset.recordId = record.id;
     const extra = record.extendedMinutes ? ` · 延长 ${record.extendedMinutes} 分钟` : "";
+    const repeatBadge = record.isRepeatCustomer ? `<span class="repeat-badge">复来</span>` : "";
     item.innerHTML = `
       <strong>${record.tableNumber} 号桌</strong>
       <span class="record-time">${formatClock(record.elapsedMs)}</span>
       <button class="record-delete" type="button" data-action="delete-record">删除</button>
-      <span class="record-detail">${formatTime(record.startedAt)} - ${formatTime(record.finishedAt)}${extra}</span>
+      <span class="record-detail">${formatTime(record.startedAt)} - ${formatTime(record.finishedAt)}${extra} ${repeatBadge}</span>
     `;
     els.recordList.append(item);
   });
@@ -284,9 +305,8 @@ function renderTablePicker() {
 }
 
 function renderSummary() {
-  const today = todayKey();
   const active = state.tables.filter((table) => table.status === "running").length;
-  const records = state.records.filter((record) => record.date === today).length;
+  const records = state.records.filter((record) => record.date === selectedRecordDate).length;
   els.activeCount.textContent = active;
   els.recordCount.textContent = records;
   els.todayLabel.textContent = new Intl.DateTimeFormat("zh-CN", {
@@ -309,7 +329,20 @@ els.addTableBtn.addEventListener("click", () => {
 });
 els.loginForm.addEventListener("submit", handleLogin);
 els.logoutBtn.addEventListener("click", () => setAuthenticated(false));
-els.clearRecordsBtn.addEventListener("click", clearTodayRecords);
+els.clearRecordsBtn.addEventListener("click", clearSelectedDateRecords);
+els.recordDateInput.addEventListener("change", () => {
+  if (!els.recordDateInput.value) return;
+  selectedRecordDate = els.recordDateInput.value;
+  render();
+});
+els.prevDateBtn.addEventListener("click", () => {
+  selectedRecordDate = shiftDate(selectedRecordDate, -1);
+  render();
+});
+els.nextDateBtn.addEventListener("click", () => {
+  selectedRecordDate = shiftDate(selectedRecordDate, 1);
+  render();
+});
 
 els.recordList.addEventListener("click", (event) => {
   const button = event.target.closest('button[data-action="delete-record"]');
@@ -330,6 +363,7 @@ els.tablesList.addEventListener("click", (event) => {
   if (action === "start") startTable(table);
   if (action === "finish") finishTable(table);
   if (action === "remove") removeTable(table);
+  if (action === "repeat") toggleRepeatCustomer(table);
   if (action === "extend") {
     extendTableId = table.id;
     els.extendTarget.textContent = `${table.number} 号桌`;

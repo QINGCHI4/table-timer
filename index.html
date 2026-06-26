@@ -46,7 +46,7 @@
         <strong id="activeCount">0</strong>
       </div>
       <div>
-        <span class="summary-label">今日完成</span>
+        <span class="summary-label">所选日期</span>
         <strong id="recordCount">0</strong>
       </div>
     </section>
@@ -55,8 +55,13 @@
 
     <section class="records">
       <div class="section-title">
-        <h2>当天记录</h2>
-        <button class="text-button" id="clearRecordsBtn" type="button">清空</button>
+        <h2>历史记录</h2>
+        <button class="text-button" id="clearRecordsBtn" type="button">清空本日</button>
+      </div>
+      <div class="date-controls">
+        <button type="button" id="prevDateBtn" aria-label="前一天">‹</button>
+        <input id="recordDateInput" type="date" aria-label="选择记录日期">
+        <button type="button" id="nextDateBtn" aria-label="后一天">›</button>
       </div>
       <div class="record-list" id="recordList"></div>
     </section>
@@ -76,6 +81,7 @@
       <div class="meta"></div>
       <div class="controls">
         <button type="button" class="primary" data-action="start">开始计时</button>
+        <button type="button" data-action="repeat">复来</button>
         <button type="button" data-action="extend">延长时间</button>
         <button type="button" data-action="finish">计时结束</button>
       </div>
