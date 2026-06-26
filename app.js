@@ -2,9 +2,10 @@ const STORAGE_KEY = "table-timer-v1";
 const AUTH_KEY = "table-timer-auth";
 const LOGIN_NAME = "Q";
 const PASSWORD_HASH = "1362b0f03cb357d5c699240f0adf8a06bd21dd95e241f909a15dfb6c0734d218";
+const DEFAULT_DURATION_MS = 60 * 60 * 1000;
+const EXTENSION_MS = 60 * 60 * 1000;
 
 const state = loadState();
-let extendTableId = null;
 let selectedRecordDate = todayKey();
 
 const els = {
@@ -26,9 +27,6 @@ const els = {
   addTableBtn: document.querySelector("#addTableBtn"),
   clearRecordsBtn: document.querySelector("#clearRecordsBtn"),
   tableTemplate: document.querySelector("#tableTemplate"),
-  extendDialog: document.querySelector("#extendDialog"),
-  extendTarget: document.querySelector("#extendTarget"),
-  customMinutes: document.querySelector("#customMinutes"),
   tablePickerDialog: document.querySelector("#tablePickerDialog"),
   tablePicker: document.querySelector("#tablePicker"),
 };
@@ -132,6 +130,14 @@ function elapsedFor(table, now = Date.now()) {
   return (table.elapsedMs || 0) + now - table.startedAt;
 }
 
+function durationFor(table) {
+  return Number(table.durationMs) || DEFAULT_DURATION_MS;
+}
+
+function remainingFor(table, now = Date.now()) {
+  return Math.max(0, durationFor(table) - elapsedFor(table, now));
+}
+
 function addTable(number) {
   if (state.tables.some((table) => table.number === number)) {
     alert(`${number} 号桌正在使用中`);
@@ -144,6 +150,7 @@ function addTable(number) {
     status: "idle",
     startedAt: null,
     elapsedMs: 0,
+    durationMs: DEFAULT_DURATION_MS,
     extendedMinutes: 0,
     isRepeatCustomer: false,
     createdAt: Date.now(),
@@ -162,8 +169,9 @@ function startTable(table) {
   render();
 }
 
-function extendTable(table, minutes) {
-  table.extendedMinutes = (table.extendedMinutes || 0) + minutes;
+function extendTable(table) {
+  table.durationMs = durationFor(table) + EXTENSION_MS;
+  table.extendedMinutes = (table.extendedMinutes || 0) + 60;
   table.lastExtendedAt = Date.now();
   saveState();
   render();
@@ -184,6 +192,7 @@ function finishTable(table) {
     startedAt: table.firstStartedAt || table.startedAt || table.createdAt,
     finishedAt,
     elapsedMs: totalMs,
+    durationMs: durationFor(table),
     extendedMinutes: table.extendedMinutes || 0,
     isRepeatCustomer: Boolean(table.isRepeatCustomer),
     date: todayKey(new Date(finishedAt)),
@@ -217,6 +226,7 @@ function tableMeta(table) {
   } else {
     lines.push("未开始");
   }
+  lines.push(`总时长 ${Math.round(durationFor(table) / 60000)} 分钟`);
   if (table.extendedMinutes) {
     lines.push(`已延长 ${table.extendedMinutes} 分钟`);
   }
@@ -244,7 +254,7 @@ function renderTables() {
     node.dataset.id = table.id;
     node.querySelector(".status-text").textContent = table.status === "running" ? "计时中" : "未开始";
     node.querySelector(".table-number").textContent = `${table.number} 号桌`;
-    node.querySelector(".timer").textContent = formatClock(elapsedFor(table, now));
+    node.querySelector(".timer").textContent = formatClock(remainingFor(table, now));
     node.querySelector(".meta").textContent = tableMeta(table);
     node.querySelector('[data-action="start"]').textContent = table.status === "running" ? "计时中" : "开始计时";
     node.querySelector('[data-action="start"]').disabled = table.status === "running";
@@ -364,24 +374,7 @@ els.tablesList.addEventListener("click", (event) => {
   if (action === "finish") finishTable(table);
   if (action === "remove") removeTable(table);
   if (action === "repeat") toggleRepeatCustomer(table);
-  if (action === "extend") {
-    extendTableId = table.id;
-    els.extendTarget.textContent = `${table.number} 号桌`;
-    els.customMinutes.value = "";
-    els.extendDialog.showModal();
-  }
-});
-
-els.extendDialog.addEventListener("close", () => {
-  const table = state.tables.find((item) => item.id === extendTableId);
-  if (!table) return;
-
-  const value = els.extendDialog.returnValue;
-  if (value === "cancel" || value === "") return;
-  const minutes = value === "custom" ? Number(els.customMinutes.value) : Number(value);
-  if (!Number.isFinite(minutes) || minutes <= 0) return;
-  extendTable(table, Math.round(minutes));
-  extendTableId = null;
+  if (action === "extend") extendTable(table);
 });
 
 els.tablePickerDialog.addEventListener("close", () => {

@@ -82,31 +82,11 @@
       <div class="controls">
         <button type="button" class="primary" data-action="start">开始计时</button>
         <button type="button" data-action="repeat">复来</button>
-        <button type="button" data-action="extend">延长时间</button>
+        <button type="button" data-action="extend">+1时</button>
         <button type="button" data-action="finish">计时结束</button>
       </div>
     </article>
   </template>
-
-  <dialog id="extendDialog">
-    <form method="dialog" class="dialog-card">
-      <h2>延长时间</h2>
-      <p id="extendTarget"></p>
-      <div class="quick-times">
-        <button value="10" type="submit">+10 分钟</button>
-        <button value="30" type="submit">+30 分钟</button>
-        <button value="60" type="submit">+1 小时</button>
-      </div>
-      <label>
-        自定义分钟
-        <input id="customMinutes" type="number" inputmode="numeric" min="1" max="600" placeholder="例如 45">
-      </label>
-      <div class="dialog-actions">
-        <button value="cancel" type="submit">取消</button>
-        <button value="custom" class="primary" type="submit">确认</button>
-      </div>
-    </form>
-  </dialog>
 
   <dialog id="tablePickerDialog">
     <form method="dialog" class="dialog-card">
